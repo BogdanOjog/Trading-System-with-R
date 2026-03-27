@@ -24,6 +24,7 @@ Rcpp::sourceCpp(code = '
 #include <algorithm>
 #include <numeric>
 using namespace Rcpp;
+// [[Rcpp::export]]
 NumericVector cpp_obv_fast(const NumericVector& close,
                           const NumericVector& volume) {
   int n = close.size();
@@ -40,6 +41,7 @@ NumericVector cpp_obv_fast(const NumericVector& close,
   }
   return obv;
 }
+// [[Rcpp::export]]
 NumericVector cpp_rolling_corr(const NumericVector& x,
                               const NumericVector& y,
                               int window) {
@@ -74,6 +76,7 @@ NumericVector cpp_rolling_corr(const NumericVector& x,
   }
   return result;
 }
+// [[Rcpp::export]]
 IntegerVector cpp_market_regime(const NumericVector& returns,
                                int window = 252,
                                double bull_thresh = 0.10,
@@ -103,6 +106,7 @@ IntegerVector cpp_market_regime(const NumericVector& returns,
   }
   return regime;
 }
+// [[Rcpp::export]]
 NumericMatrix cpp_clip_matrix(const NumericMatrix& mat,
                              const NumericVector& lower,
                              const NumericVector& upper) {
@@ -125,6 +129,7 @@ NumericMatrix cpp_clip_matrix(const NumericMatrix& mat,
   }
   return result;
 }
+// [[Rcpp::export]]
 NumericVector cpp_dtw_distance(const NumericMatrix& pattern,
                               const NumericMatrix& series,
                               int window = 50) {
@@ -859,7 +864,7 @@ print(p2)
 print(p3)
 if(exists("p4")) print(p4)
 cat(paste0("\n", strrep("=", 100)))
-cat("\n PRODUCTION QUANT ENGINE - FINAL REPORT")
+cat("\n ENGINE_SCRIPT - FINAL REPORT")
 cat(paste0("\n", strrep("=", 100)))
 cat("\n\n PERFORMANCE SUMMARY:\n")
 cat(sprintf("    Total Return: %.2f%%\n", metrics$total_return * 100))
@@ -895,7 +900,7 @@ if(metrics$max_drawdown < -0.20) {
   cat("    ACCEPTABLE DRAWDOWN: Below 10%\n")
 }
 cat(paste0("\n", strrep("=", 100)))
-cat("\n PRODUCTION QUANT ENGINE v3.0 - EXECUTION COMPLETE")
+cat("\n ENGINE_SCRIPT v3.0 - EXECUTION COMPLETE")
 cat(paste0(strrep("=", 100), "\n\n"))
 cat(" Exporting results for production use...\n")
 saveRDS(final_xgb, "production_xgb_model.rds")

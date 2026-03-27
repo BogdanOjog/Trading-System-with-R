@@ -4,16 +4,22 @@ pacman::p_load(
   TTR,
   dplyr
 )
-SCREENER_CACHE_DIR <- file.path(dirname(rstudioapi::getActiveDocumentContext()$path), "screener_cache")
+SCREENER_CACHE_DIR <- "screener_cache" 
 dir.create(SCREENER_CACHE_DIR, showWarnings = FALSE)
-get_sp500_universe <- function(use_cache = TRUE) {
-  cache_file <- file.path(SCREENER_CACHE_DIR,
-                          paste0("sp500_universe_", Sys.Date(), ".rds"))
+get_sp500_universe <- function(use_cache = TRUE, max_age_days = 30) {
+  cache_file <- file.path(SCREENER_CACHE_DIR, "sp500_universe_static.rds")
   if (use_cache && file.exists(cache_file)) {
-    cat("   [cache] Universul S&P 500 incarcat din cache local.\n")
-    return(readRDS(cache_file))
+    file_info <- file.info(cache_file)
+    file_age <- as.numeric(difftime(Sys.time(), file_info$mtime, units = "days"))
+    if (file_age <= max_age_days) {
+      cat(sprintf("   [cache] Universul S&P 500 citit instantaneu de pe disc (vechime: %.1f zile).\n", file_age))
+      return(readRDS(cache_file))
+    } else {
+      cat("   [cache] Lista S&P 500 a expirat (mai veche de 30 zile). Actualizam...\n")
+    }
+  } else {
+    cat("   [cache] Nu s-a gasit lista locala. Descarcam de pe Wikipedia...\n")
   }
-  cat("   Descarcand lista S&P 500 din Wikipedia...\n")
   tryCatch({
     url  <- "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies"
     page <- rvest::read_html(url)
@@ -21,12 +27,16 @@ get_sp500_universe <- function(use_cache = TRUE) {
     tickers <- as.character(tbl$Symbol)
     tickers <- gsub("\\.", "-", tickers)
     tickers <- tickers[nchar(tickers) > 0 & !is.na(tickers)]
-    cat(sprintf("   [OK] %d tickers in universel S&P 500.\n", length(tickers)))
+    cat(sprintf("   [OK] %d tickers descarcati si salvati in cache pentru %d zile.\n", length(tickers), max_age_days))
     if (use_cache) saveRDS(tickers, cache_file)
     return(tickers)
   }, error = function(e) {
     cat(sprintf("   [WARN] Wikipedia indisponibil: %s\n", conditionMessage(e)))
-    cat("   [FALLBACK] Folosind lista hardcodata de 100 tickers...\n")
+    if (file.exists(cache_file)) {
+        cat("   [FALLBACK] Folosim cache-ul expirat din lipsa de conexiune.\n")
+        return(readRDS(cache_file))
+    }
+    cat("   [FALLBACK CRITIC] Folosim lista hardcodata de 100 tickers...\n")
     fallback <- c(
       "AAPL","MSFT","NVDA","AMZN","META","GOOGL","GOOG","BRK-B","LLY","AVGO",
       "JPM","TSLA","V","UNH","XOM","MA","PG","COST","JNJ","HD",
@@ -128,10 +138,10 @@ screen_universe <- function(tickers,
   dt_all[, z_RiskAdj  := zscore(Risk_Adj_Mom)]
   dt_all[, z_SMA200   := zscore(SMA200_Dist)]
   dt_all[, z_VolPen   := zscore(ATR_Pct)]
-  dt_all[, Alpha_Score := 0.40 * z_Mom +
-                           0.35 * z_RiskAdj +
+  dt_all[, Alpha_Score := 0.15 * z_Mom +
+                           0.40 * z_RiskAdj +
                            0.25 * z_SMA200 -
-                           0.20 * z_VolPen]
+                           0.30 * z_VolPen]
   dt_filtered <- dt_all[SMA200_Dist > 0]
   if (nrow(dt_filtered) == 0) {
     cat("   [WARN] Niciun ticker nu trece filtrul SMA200 > 0 (bear market?). Folosim top fara filtru.\n")
@@ -151,7 +161,7 @@ run_alpha_screener <- function(top_n         = 5,
                                whitelist     = NULL,
                                pit_date      = NULL) {
   cat(paste0("\n", strrep("=", 80), "\n"))
-  cat("   ALPHA SCREENER MODULE v1.0\n")
+  cat("   SCREENER_SCRIPT\n")
   cat(paste0(strrep("=", 80), "\n"))
   universe <- if (!is.null(whitelist)) {
     cat(sprintf("   [WHITELIST] Folosind lista personalizata de %d tickers.\n", length(whitelist)))
@@ -197,6 +207,6 @@ if (sys.nframe() == 0) {
     whitelist     = WHITELIST,
     use_cache     = TRUE
   )
-  cat("Top tickers selectate pentru Quant Engine:\n")
+  cat("Top tickers selectate pentru ENGINE_SCRIPT:\n")
   print(screener_result$screener_dt)
 }

@@ -15,10 +15,10 @@ SCRIPT_DIR  <- dirname(rstudioapi::getActiveDocumentContext()$path)
 OUTPUT_DIR  <- file.path(SCRIPT_DIR, "quant_output")
 dir.create(OUTPUT_DIR, showWarnings = FALSE)
 cat(paste0("\n", strrep("=", 80), "\n"))
-cat("   QUANT ENGINE RUNNER v1.0\n")
+cat("   RUNNER\n")
 cat(paste0(strrep("=", 80), "\n"))
-screener_path <- file.path(SCRIPT_DIR, "ALPHA_SCREENER.R")
-if (!file.exists(screener_path)) stop("ALPHA_SCREENER.R nu a fost gasit in: ", SCRIPT_DIR)
+screener_path <- file.path(SCRIPT_DIR, "SCREENER_SCRIPT.R")
+if (!file.exists(screener_path)) stop("SCREENER_SCRIPT.R nu a fost gasit in: ", SCRIPT_DIR)
 source(screener_path, local = FALSE)
 screener_result <- run_alpha_screener(
   top_n         = SCREENER_TOP_N,
@@ -31,7 +31,7 @@ top_tickers   <- screener_result$top_tickers
 screener_dt   <- screener_result$screener_dt
 cat(sprintf("\n[RUNNER] Tickers selectati de screener: %s\n",
             paste(top_tickers, collapse = ", ")))
-engine_path <- file.path(SCRIPT_DIR, "INSTITUTIONAL QUANT ENGINE V3.R")
+engine_path <- file.path(SCRIPT_DIR, "ENGINE_SCRIPT.R")
 if (!file.exists(engine_path)) stop("Engine-ul nu a fost gasit in: ", SCRIPT_DIR)
 all_signals  <- list()
 for (ticker in top_tickers) {
@@ -92,7 +92,7 @@ for (ticker in top_tickers) {
               if (!is.na(result$signal)) result$signal * 100 else 0))
 }
 cat(paste0("\n", strrep("=", 80), "\n"))
-cat("   RAPORT COMPARATIV  ALPHA SCREENER + QUANT ENGINE\n")
+cat("   RAPORT COMPARATIV  SCREENER_SCRIPT + QUANT ENGINE\n")
 cat(sprintf("   Data: %s | Orizont: %d zile\n", Sys.Date(), ENGINE_FORECAST_DAYS))
 cat(paste0(strrep("=", 80), "\n"))
 cat("\n     AVERTISMENT INSTITUTIONAL (LOOK-AHEAD BIAS):\n")
@@ -144,7 +144,7 @@ p_dash <- ggplot(summary_dt, aes(x = reorder(Ticker, Pred_Ret_Pct), y = Pred_Ret
   geom_text(aes(label = sprintf("%+.2f%%", Pred_Ret_Pct)),
             hjust = ifelse(summary_dt$Pred_Ret_Pct > 0, -0.2, 1.2),
             size = 5, fontface = "bold", color = "black") +
-  labs(title = " Quant Engine: Previziuni Top Tickers (20 Zile)",
+  labs(title = " ENGINE_SCRIPT: Previziuni Top Tickers (20 Zile)",
        subtitle = sprintf("Generat pe: %s | Model: XGBoost + LightGBM", Sys.Date()),
        x = "Ticker (Simbol)",
        y = "Randament Previzionat (%)") +
